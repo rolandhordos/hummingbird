@@ -30,25 +30,31 @@ public struct HBRootResponder: HBResponder {
     var preProcessMiddlewares: [HBPreProcessMiddleware]
     var postProcessMiddlewares: [HBPostProcessMiddleware]
     var firstResponder: HBResponder
+    var runPrePostProcess: Bool
 
-    init(middlewares: [HBMiddleware], firstResponder: HBResponder) {
+    init(middlewares: [HBMiddleware], firstResponder: HBResponder, runPrePostProcess: Bool = true) {
         self.preProcessMiddlewares = middlewares.compactMap { $0 as? HBPreProcessMiddleware }
         self.postProcessMiddlewares = middlewares.reversed().compactMap { $0 as? HBPostProcessMiddleware }
         self.firstResponder = firstResponder
+        self.runPrePostProcess = runPrePostProcess
     }
 
     public func respond(to request: HBRequest) -> EventLoopFuture<HBResponse> {
-        for middleware in preProcessMiddlewares {
-            if let response = middleware.preProcess(request: request) {
-                return request.success(response)
-            }
-        }
-        if postProcessMiddlewares.count > 0 {
-            return firstResponder.respond(to: request).map { response in
-                for middleware in postProcessMiddlewares {
-                    middleware.postProcess(response: response, for: request)
+        if runPrePostProcess {
+            for middleware in preProcessMiddlewares {
+                if let response = middleware.preProcess(request: request) {
+                    return request.success(response)
                 }
-                return response
+            }
+            if postProcessMiddlewares.count > 0 {
+                return firstResponder.respond(to: request).map { response in
+                    for middleware in postProcessMiddlewares {
+                        middleware.postProcess(response: response, for: request)
+                    }
+                    return response
+                }
+            } else {
+                return firstResponder.respond(to: request)
             }
         } else {
             return firstResponder.respond(to: request)
