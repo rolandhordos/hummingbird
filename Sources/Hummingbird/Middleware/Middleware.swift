@@ -30,6 +30,26 @@ public protocol HBMiddleware {
     func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse>
 }
 
+public protocol HBPreProcessMiddleware: HBMiddleware {
+    func preProcess(request: HBRequest) -> HBResponse?
+}
+
+extension HBPreProcessMiddleware {
+    func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
+        next.respond(to: request)
+    }
+}
+
+public protocol HBPostProcessMiddleware: HBMiddleware {
+    func postProcess(response: HBResponse)
+}
+
+extension HBPostProcessMiddleware {
+    func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
+        next.respond(to: request)
+    }
+}
+
 struct MiddlewareResponder: HBResponder {
     let middleware: HBMiddleware
     let next: HBResponder
