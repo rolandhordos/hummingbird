@@ -16,13 +16,13 @@ public class HBMiddlewareGroup {
     /// Construct responder chain from this middleware group
     /// - Parameter finalResponder: The responder the last middleware calls
     /// - Returns: Responder chain
-    public func constructResponder(finalResponder: HBResponder) -> HBRootResponder {
+    public func constructResponder(finalResponder: HBResponder, runPrePostProcess: Bool = true) -> HBRootResponder {
         var currentResponser = finalResponder
         for i in (0..<self.middlewares.count).reversed() {
             let responder = MiddlewareResponder(middleware: middlewares[i], next: currentResponser)
             currentResponser = responder
         }
-        return HBRootResponder(middlewares: middlewares, firstResponder: currentResponser)
+        return HBRootResponder(middlewares: middlewares, firstResponder: currentResponser, runPrePostProcess: runPrePostProcess)
     }
 }
 
@@ -58,6 +58,21 @@ public struct HBRootResponder: HBResponder {
             }
         } else {
             return firstResponder.respond(to: request)
+        }
+    }
+
+    func preProcess(request: HBRequest) -> HBResponse? {
+        for middleware in preProcessMiddlewares {
+            if let response = middleware.preProcess(request: request) {
+                return response
+            }
+        }
+        return nil
+    }
+
+    func postProcess(response: HBResponse, for request: HBRequest) {
+        for middleware in postProcessMiddlewares {
+            middleware.postProcess(response: response, for: request)
         }
     }
 }

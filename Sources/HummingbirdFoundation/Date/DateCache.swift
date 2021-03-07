@@ -54,7 +54,7 @@ extension HBApplication.EventLoopStorage {
 
 extension HBApplication {
     /// Add a `DateCache` for every `EventLoop` in the `EventLoopGroup` associated with the application
-    func addDateCaches() {
+    public func addDateCaches() {
         for eventLoop in eventLoopGroup.makeIterator() {
             let storage = self.eventLoopStorage(for: eventLoop)
             if storage._dateCache == nil {

@@ -116,7 +116,7 @@ public final class HBApplication: HBExtensible {
 
     /// Construct the RequestResponder from the middleware group and router
     public func constructResponder() -> HBRootResponder {
-        return self.middleware.constructResponder(finalResponder: self.router)
+        return self.middleware.constructResponder(finalResponder: self.router, runPrePostProcess: false)
     }
 
     /// shutdown eventloop, threadpool and any extensions attached to the Application

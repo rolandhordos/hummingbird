@@ -11,7 +11,7 @@ extension HBApplication {
     /// The HummingbirdCore server calls `respond` to get the HTTP response from Hummingbird
     public struct HTTPResponder: HBHTTPResponder {
         let application: HBApplication
-        let responder: HBResponder
+        let responder: HBRootResponder
 
         /// Construct HTTP responder
         /// - Parameter application: application creating this responder
@@ -38,9 +38,15 @@ extension HBApplication {
                 allocator: context.channel.allocator
             )
 
+            if let response = self.responder.preProcess(request: request) {
+                let responseHead = HTTPResponseHead(version: request.version, status: response.status, headers: response.headers)
+                let httpResponse = HBHTTPResponse(head: responseHead, body: response.body)
+                return context.eventLoop.makeSucceededFuture(httpResponse)
+            }
             // respond to request
             return self.responder.respond(to: request)
                 .map { response in
+                    self.responder.postProcess(response: response, for: request)
                     let responseHead = HTTPResponseHead(version: request.version, status: response.status, headers: response.headers)
                     return HBHTTPResponse(head: responseHead, body: response.body)
                 }
