@@ -16,42 +16,42 @@ public class HBMiddlewareGroup {
     /// Construct responder chain from this middleware group
     /// - Parameter finalResponder: The responder the last middleware calls
     /// - Returns: Responder chain
-    public func constructResponder(finalResponder: HBResponder) -> HBResponder {
+    public func constructResponder(finalResponder: HBResponder) -> HBRootResponder {
         var currentResponser = finalResponder
         for i in (0..<self.middlewares.count).reversed() {
             let responder = MiddlewareResponder(middleware: middlewares[i], next: currentResponser)
             currentResponser = responder
         }
-        return RootResponder(middlewares: middlewares, firstResponder: currentResponser)
+        return HBRootResponder(middlewares: middlewares, firstResponder: currentResponser)
+    }
+}
+
+public struct HBRootResponder: HBResponder {
+    var preProcessMiddlewares: [HBPreProcessMiddleware]
+    var postProcessMiddlewares: [HBPostProcessMiddleware]
+    var firstResponder: HBResponder
+
+    init(middlewares: [HBMiddleware], firstResponder: HBResponder) {
+        self.preProcessMiddlewares = middlewares.compactMap { $0 as? HBPreProcessMiddleware }
+        self.postProcessMiddlewares = middlewares.reversed().compactMap { $0 as? HBPostProcessMiddleware }
+        self.firstResponder = firstResponder
     }
 
-    struct RootResponder: HBResponder {
-        var preProcessMiddlewares: [HBPreProcessMiddleware]
-        var postProcessMiddlewares: [HBPostProcessMiddleware]
-        var firstResponder: HBResponder
-
-        init(middlewares: [HBMiddleware], firstResponder: HBResponder) {
-            self.preProcessMiddlewares = middlewares.compactMap { $0 as? HBPreProcessMiddleware }
-            self.postProcessMiddlewares = middlewares.compactMap { $0 as? HBPostProcessMiddleware }
-            self.firstResponder = firstResponder
+    public func respond(to request: HBRequest) -> EventLoopFuture<HBResponse> {
+        for middleware in preProcessMiddlewares {
+            if let response = middleware.preProcess(request: request) {
+                return request.success(response)
+            }
         }
-
-        func respond(to request: HBRequest) -> EventLoopFuture<HBResponse> {
-            for middleware in preProcessMiddlewares {
-                if let response = middleware.preProcess(request: request) {
-                    return request.success(response)
+        if postProcessMiddlewares.count > 0 {
+            return firstResponder.respond(to: request).map { response in
+                for middleware in postProcessMiddlewares {
+                    middleware.postProcess(response: response, for: request)
                 }
+                return response
             }
-            if postProcessMiddlewares.count > 0 {
-                return firstResponder.respond(to: request).map { response in
-                    for middleware in postProcessMiddlewares {
-                        middleware.postProcess(response: response)
-                    }
-                    return response
-                }
-            } else {
-                return firstResponder.respond(to: request)
-            }
+        } else {
+            return firstResponder.respond(to: request)
         }
     }
 }

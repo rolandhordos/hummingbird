@@ -115,7 +115,7 @@ public final class HBApplication: HBExtensible {
     }
 
     /// Construct the RequestResponder from the middleware group and router
-    public func constructResponder() -> HBResponder {
+    public func constructResponder() -> HBRootResponder {
         return self.middleware.constructResponder(finalResponder: self.router)
     }
 
