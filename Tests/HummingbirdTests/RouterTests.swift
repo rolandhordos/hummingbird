@@ -16,13 +16,12 @@ import Hummingbird
 import HummingbirdXCT
 import XCTest
 
-/*final class RouterTests: XCTestCase {
+final class RouterTests: XCTestCase {
     struct TestMiddleware: HBMiddleware {
-        func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
-            return next.respond(to: request).map { response in
-                response.headers.replaceOrAdd(name: "middleware", value: "TestMiddleware")
-                return response
-            }
+        func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse {
+            let response = try await next.respond(to: request)
+            response.headers.replaceOrAdd(name: "middleware", value: "TestMiddleware")
+            return response
         }
     }
 
@@ -96,7 +95,7 @@ import XCTest
             .add(middleware: TestMiddleware())
             .group("/group")
             .get { request in
-                return request.success("hello")
+                return "hello"
             }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -137,4 +136,4 @@ import XCTest
         }
     }
 }
-*/
+
