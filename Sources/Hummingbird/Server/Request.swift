@@ -95,26 +95,6 @@ public final class HBRequest: HBExtensible {
         }
     }
 
-    /// Return failed `EventLoopFuture`
-    /*public func failure<T>(_ error: Error) -> EventLoopFuture<T> {
-        return self.eventLoop.makeFailedFuture(error)
-    }
-
-    /// Return failed `EventLoopFuture` with http response status code
-    public func failure<T>(_ status: HTTPResponseStatus) -> EventLoopFuture<T> {
-        return self.eventLoop.makeFailedFuture(HBHTTPError(status))
-    }
-
-    /// Return failed `EventLoopFuture` with http response status code and message
-    public func failure<T>(_ status: HTTPResponseStatus, message: String) -> EventLoopFuture<T> {
-        return self.eventLoop.makeFailedFuture(HBHTTPError(status, message: message))
-    }
-
-    /// Return succeeded `EventLoopFuture`
-    public func success<T>(_ value: T) -> EventLoopFuture<T> {
-        return self.eventLoop.makeSucceededFuture(value)
-    }*/
-
     private static let globalRequestID = NIOAtomic<Int>.makeAtomic(value: 0)
 }
 

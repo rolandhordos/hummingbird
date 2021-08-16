@@ -179,43 +179,4 @@ public struct HBFileIO {
             try await self.fileIO.write(fileHandle: handle, buffer: buffer, eventLoop: eventLoop).get()
         }
     }
-
-    /// class used to stream files
-    /*class FileStreamer: HBResponseBodyStreamer {
-        let chunkSize: Int
-        let handle: NIOFileHandle
-        var fileOffset: Int
-        let endOffset: Int
-        let fileIO: NonBlockingFileIO
-        let allocator: ByteBufferAllocator
-
-        init(handle: NIOFileHandle, fileRegion: FileRegion, fileIO: NonBlockingFileIO, chunkSize: Int, allocator: ByteBufferAllocator) {
-            self.handle = handle
-            self.fileOffset = fileRegion.readerIndex
-            self.endOffset = fileRegion.endIndex
-            self.fileIO = fileIO
-            self.chunkSize = chunkSize
-            self.allocator = allocator
-        }
-
-        func read(on eventLoop: EventLoop) -> EventLoopFuture<HBResponseBody.StreamResult> {
-            let bytesLeft = self.endOffset - self.fileOffset
-            let bytesToRead = min(self.chunkSize, bytesLeft)
-            if bytesToRead > 0 {
-                let fileOffsetToRead = self.fileOffset
-                self.fileOffset += bytesToRead
-                return self.fileIO.read(fileHandle: self.handle, fromOffset: Int64(fileOffsetToRead), byteCount: bytesToRead, allocator: self.allocator, eventLoop: eventLoop)
-                    .map { .byteBuffer($0) }
-                    .flatMapErrorThrowing { error in
-                        // close handle on error being returned
-                        try? self.handle.close()
-                        throw error
-                    }
-            } else {
-                // close handle now streamer has finished
-                try? self.handle.close()
-                return eventLoop.makeSucceededFuture(.end)
-            }
-        }
-    }*/
 }
