@@ -24,7 +24,7 @@ public protocol HBPersistDriver {
     ///   - value: Codable value to store
     ///   - expires: If non-nil defines time that value will expire
     ///   - request: Request making this call
-    func create<Object: Codable>(key: String, value: Object, expires: TimeAmount?, request: HBRequest) -> EventLoopFuture<Void>
+    func create<Object: Codable>(key: String, value: Object, expires: TimeAmount?, request: HBRequest) async throws
 
     /// set value for key. If value already exists overwrite it
     /// - Parameters:
@@ -32,20 +32,20 @@ public protocol HBPersistDriver {
     ///   - value: Codable value to store
     ///   - expires: If non-nil defines time that value will expire
     ///   - request: Request making this call
-    func set<Object: Codable>(key: String, value: Object, expires: TimeAmount?, request: HBRequest) -> EventLoopFuture<Void>
+    func set<Object: Codable>(key: String, value: Object, expires: TimeAmount?, request: HBRequest) async throws
 
     /// get value for key
     /// - Parameters:
     ///   - key: Key used to look for value
     ///   - as: Type you want value to be returned as. If it cannot be returned as this value then nil will be returned
     ///   - request: Request making this call
-    func get<Object: Codable>(key: String, as: Object.Type, request: HBRequest) -> EventLoopFuture<Object?>
+    func get<Object: Codable>(key: String, as: Object.Type, request: HBRequest) async throws -> Object?
 
     /// remove value associated with key
     /// - Parameters:
     ///   - key: Key used to look for value
     ///   - request: Request making this call
-    func remove(key: String, request: HBRequest) -> EventLoopFuture<Void>
+    func remove(key: String, request: HBRequest) async throws
 }
 
 extension HBPersistDriver {
@@ -65,6 +65,6 @@ public struct HBPersistDriverFactory {
 
     /// In memory driver for persist system
     public static var memory: HBPersistDriverFactory {
-        .init(create: { app in HBMemoryPersistDriver(eventLoopGroup: app.eventLoopGroup) })
+        .init(create: { app in HBMemoryPersistDriver() })
     }
 }

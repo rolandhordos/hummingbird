@@ -15,7 +15,7 @@
 @testable import Hummingbird
 import XCTest
 
-/*final class PersistTests: XCTestCase {
+final class PersistTests: XCTestCase {
     static let redisHostname = HBEnvironment.shared.get("REDIS_HOSTNAME") ?? "localhost"
 
     func createApplication() throws -> HBApplication {
@@ -23,27 +23,27 @@ import XCTest
         // add persist
         app.addPersist(using: .memory)
 
-        app.router.put("/persist/:tag") { request -> EventLoopFuture<HTTPResponseStatus> in
-            guard let tag = request.parameters.get("tag") else { return request.failure(.badRequest) }
-            guard let buffer = request.body.buffer else { return request.failure(.badRequest) }
-            return request.persist.set(key: tag, value: String(buffer: buffer))
-                .map { _ in .ok }
+        app.router.put("/persist/:tag") { request -> HTTPResponseStatus in
+            guard let tag = request.parameters.get("tag") else { throw HBHTTPError(.badRequest) }
+            guard let buffer = request.body.buffer else { throw HBHTTPError(.badRequest) }
+            try await request.persist.set(key: tag, value: String(buffer: buffer))
+            return .ok
         }
-        app.router.put("/persist/:tag/:time") { request -> EventLoopFuture<HTTPResponseStatus> in
-            guard let time = request.parameters.get("time", as: Int.self) else { return request.failure(.badRequest) }
-            guard let tag = request.parameters.get("tag") else { return request.failure(.badRequest) }
-            guard let buffer = request.body.buffer else { return request.failure(.badRequest) }
-            return request.persist.set(key: tag, value: String(buffer: buffer), expires: .seconds(numericCast(time)))
-                .map { _ in .ok }
+        app.router.put("/persist/:tag/:time") { request -> HTTPResponseStatus in
+            guard let time = request.parameters.get("time", as: Int.self) else { throw HBHTTPError (.badRequest) }
+            guard let tag = request.parameters.get("tag") else { throw HBHTTPError(.badRequest) }
+            guard let buffer = request.body.buffer else { throw HBHTTPError(.badRequest) }
+            try await request.persist.set(key: tag, value: String(buffer: buffer), expires: .seconds(numericCast(time)))
+            return .ok
         }
-        app.router.get("/persist/:tag") { request -> EventLoopFuture<String?> in
-            guard let tag = request.parameters.get("tag", as: String.self) else { return request.failure(.badRequest) }
-            return request.persist.get(key: tag, as: String.self)
+        app.router.get("/persist/:tag") { request -> String? in
+            guard let tag = request.parameters.get("tag", as: String.self) else { throw HBHTTPError(.badRequest) }
+            return try await request.persist.get(key: tag, as: String.self)
         }
-        app.router.delete("/persist/:tag") { request -> EventLoopFuture<HTTPResponseStatus> in
-            guard let tag = request.parameters.get("tag", as: String.self) else { return request.failure(.badRequest) }
-            return request.persist.remove(key: tag)
-                .map { _ in .noContent }
+        app.router.delete("/persist/:tag") { request -> HTTPResponseStatus in
+            guard let tag = request.parameters.get("tag", as: String.self) else { throw HBHTTPError(.badRequest) }
+            try await request.persist.remove(key: tag)
+            return .noContent
         }
         return app
     }
@@ -62,11 +62,11 @@ import XCTest
 
     func testCreateGet() throws {
         let app = try createApplication()
-        app.router.put("/create/:tag") { request -> EventLoopFuture<HTTPResponseStatus> in
-            guard let tag = request.parameters.get("tag") else { return request.failure(.badRequest) }
-            guard let buffer = request.body.buffer else { return request.failure(.badRequest) }
-            return request.persist.create(key: tag, value: String(buffer: buffer))
-                .map { _ in .ok }
+        app.router.put("/create/:tag") { request -> HTTPResponseStatus in
+            guard let tag = request.parameters.get("tag") else { throw HBHTTPError(.badRequest) }
+            guard let buffer = request.body.buffer else { throw HBHTTPError(.badRequest) }
+            try await request.persist.create(key: tag, value: String(buffer: buffer))
+            return .ok
         }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -80,15 +80,15 @@ import XCTest
 
     func testDoubleCreateFail() throws {
         let app = try createApplication()
-        app.router.put("/create/:tag") { request -> EventLoopFuture<HTTPResponseStatus> in
-            guard let tag = request.parameters.get("tag") else { return request.failure(.badRequest) }
-            guard let buffer = request.body.buffer else { return request.failure(.badRequest) }
-            return request.persist.create(key: tag, value: String(buffer: buffer))
-                .flatMapErrorThrowing { error in
-                    if let error = error as? HBPersistError, error == .duplicate { throw HBHTTPError(.conflict) }
-                    throw error
-                }
-                .map { _ in .ok }
+        app.router.put("/create/:tag") { request -> HTTPResponseStatus in
+            guard let tag = request.parameters.get("tag") else { throw HBHTTPError(.badRequest) }
+            guard let buffer = request.body.buffer else { throw HBHTTPError(.badRequest) }
+            do {
+                try await request.persist.create(key: tag, value: String(buffer: buffer))
+            } catch let error as HBPersistError where error == .duplicate {
+                throw HBHTTPError(.conflict)
+            }
+            return .ok
         }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -143,15 +143,16 @@ import XCTest
         }
         let app = try createApplication()
 
-        app.router.put("/codable/:tag") { request -> EventLoopFuture<HTTPResponseStatus> in
-            guard let tag = request.parameters.get("tag") else { return request.failure(.badRequest) }
-            guard let buffer = request.body.buffer else { return request.failure(.badRequest) }
-            return request.persist.set(key: tag, value: TestCodable(buffer: String(buffer: buffer)))
-                .map { _ in .ok }
+        app.router.put("/codable/:tag") { request -> HTTPResponseStatus in
+            guard let tag = request.parameters.get("tag") else { throw HBHTTPError(.badRequest) }
+            guard let buffer = request.body.buffer else { throw HBHTTPError(.badRequest) }
+            try await request.persist.set(key: tag, value: TestCodable(buffer: String(buffer: buffer)))
+            return .ok
         }
-        app.router.get("/codable/:tag") { request -> EventLoopFuture<String?> in
-            guard let tag = request.parameters.get("tag") else { return request.failure(.badRequest) }
-            return request.persist.get(key: tag, as: TestCodable.self).map { $0.map(\.buffer) }
+        app.router.get("/codable/:tag") { request -> String? in
+            guard let tag = request.parameters.get("tag") else { throw HBHTTPError(.badRequest) }
+            let value = try await request.persist.get(key: tag, as: TestCodable.self)
+            return value?.buffer
         }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -197,4 +198,4 @@ import XCTest
             XCTAssertEqual(String(buffer: body), "ThisIsTest1")
         }
     }
-}*/
+}

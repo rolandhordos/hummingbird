@@ -48,8 +48,8 @@ extension HBRequest {
         ///   - value: value
         ///   - expires: time key/value pair will expire
         /// - Returns: EventLoopFuture for when value has been set
-        public func create<Object: Codable>(key: String, value: Object, expires: TimeAmount? = nil) -> EventLoopFuture<Void> {
-            return self.request.application.persist.driver.create(key: key, value: value, expires: expires, request: self.request)
+        public func create<Object: Codable>(key: String, value: Object, expires: TimeAmount? = nil) async throws {
+            return try await self.request.application.persist.driver.create(key: key, value: value, expires: expires, request: self.request)
         }
 
         /// Set value for key that will expire after a certain time
@@ -58,8 +58,8 @@ extension HBRequest {
         ///   - value: value
         ///   - expires: time key/value pair will expire
         /// - Returns: EventLoopFuture for when value has been set
-        public func set<Object: Codable>(key: String, value: Object, expires: TimeAmount? = nil) -> EventLoopFuture<Void> {
-            return self.request.application.persist.driver.set(key: key, value: value, expires: expires, request: self.request)
+        public func set<Object: Codable>(key: String, value: Object, expires: TimeAmount? = nil) async throws {
+            return try await self.request.application.persist.driver.set(key: key, value: value, expires: expires, request: self.request)
         }
 
         /// Get value for key
@@ -67,14 +67,14 @@ extension HBRequest {
         ///   - key: key string
         ///   - type: Type of value
         /// - Returns: EventLoopFuture that will be filled with value
-        public func get<Object: Codable>(key: String, as type: Object.Type) -> EventLoopFuture<Object?> {
-            return self.request.application.persist.driver.get(key: key, as: type, request: self.request)
+        public func get<Object: Codable>(key: String, as type: Object.Type) async throws -> Object? {
+            return try await self.request.application.persist.driver.get(key: key, as: type, request: self.request)
         }
 
         /// Remove value for key
         /// - Parameter key: key string
-        public func remove(key: String) -> EventLoopFuture<Void> {
-            return self.request.application.persist.driver.remove(key: key, request: self.request)
+        public func remove(key: String) async throws {
+            return try await self.request.application.persist.driver.remove(key: key, request: self.request)
         }
 
         let request: HBRequest

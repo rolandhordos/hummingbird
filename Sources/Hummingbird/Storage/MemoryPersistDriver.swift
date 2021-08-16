@@ -15,44 +15,36 @@
 import NIO
 
 /// In memory driver for persist system for storing persistent cross request key/value pairs
-class HBMemoryPersistDriver: HBPersistDriver {
-    init(eventLoopGroup: EventLoopGroup) {
+actor HBMemoryPersistDriver: HBPersistDriver {
+    init() {
         self.values = [:]
-        self.task = eventLoopGroup.next().scheduleRepeatedTask(initialDelay: .hours(1), delay: .hours(1)) { _ in
+        /*self.task = eventLoopGroup.next().scheduleRepeatedTask(initialDelay: .hours(1), delay: .hours(1)) { _ in
             self.tidy()
-        }
+        }*/
     }
 
-    func shutdown() {
+    func shutdown() async {
         self.task?.cancel()
     }
 
-    func create<Object: Codable>(key: String, value: Object, expires: TimeAmount? = nil, request: HBRequest) -> EventLoopFuture<Void> {
-        return request.eventLoop.submit {
-            guard self.values[key] == nil else { throw HBPersistError.duplicate }
-            self.values[key] = .init(value: value, expires: expires)
-        }
+    func create<Object: Codable>(key: String, value: Object, expires: TimeAmount? = nil, request: HBRequest) async throws {
+        guard self.values[key] == nil else { throw HBPersistError.duplicate }
+        self.values[key] = .init(value: value, expires: expires)
     }
 
-    func set<Object: Codable>(key: String, value: Object, expires: TimeAmount? = nil, request: HBRequest) -> EventLoopFuture<Void> {
-        return request.eventLoop.submit {
-            self.values[key] = .init(value: value, expires: expires)
-        }
+    func set<Object: Codable>(key: String, value: Object, expires: TimeAmount? = nil, request: HBRequest) async throws {
+        self.values[key] = .init(value: value, expires: expires)
     }
 
-    func get<Object: Codable>(key: String, as: Object.Type, request: HBRequest) -> EventLoopFuture<Object?> {
-        return request.eventLoop.submit {
-            guard let item = self.values[key] else { return nil }
-            guard let expires = item.epochExpires else { return item.value as? Object }
-            guard Item.getEpochTime() <= expires else { return nil }
-            return item.value as? Object
-        }
+    func get<Object: Codable>(key: String, as: Object.Type, request: HBRequest) async throws -> Object? {
+        guard let item = self.values[key] else { return nil }
+        guard let expires = item.epochExpires else { return item.value as? Object }
+        guard Item.getEpochTime() <= expires else { return nil }
+        return item.value as? Object
     }
 
-    func remove(key: String, request: HBRequest) -> EventLoopFuture<Void> {
-        return request.eventLoop.submit {
-            self.values[key] = nil
-        }
+    func remove(key: String, request: HBRequest) async throws {
+        self.values[key] = nil
     }
 
     private func tidy() {
