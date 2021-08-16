@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "hummingbird",
-    platforms: [.iOS(.v12), .tvOS(.v12)],
+    platforms: [.macOS("12.0"), .iOS("15.0"), .tvOS("15.0")],
     products: [
         .library(name: "Hummingbird", targets: ["Hummingbird"]),
         .library(name: "HummingbirdFoundation", targets: ["HummingbirdFoundation"]),
@@ -17,7 +17,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.26.0"),
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.4.0"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "1.0.0-alpha.6"),
-        .package(url: "https://github.com/hummingbird-project/hummingbird-core.git", .upToNextMinor(from: "0.11.1")),
+        .package(url: "https://github.com/hummingbird-project/hummingbird-core.git", .branch("async-await")),
     ],
     targets: [
         .target(name: "Hummingbird", dependencies: [

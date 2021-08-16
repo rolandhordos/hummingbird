@@ -16,7 +16,7 @@ import Foundation
 import Hummingbird
 import HummingbirdXCT
 import XCTest
-
+/*
 class HummingbirdDateTests: XCTestCase {
     func testRFC1123Renderer() {
         let formatter = DateFormatter()
@@ -47,3 +47,4 @@ class HummingbirdDateTests: XCTestCase {
         }
     }
 }
+*/

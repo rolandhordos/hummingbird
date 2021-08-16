@@ -258,3 +258,4 @@ final class MetricsTests: XCTestCase {
         XCTAssertEqual(counter.dimensions[1].1, "GET")
     }
 }
+

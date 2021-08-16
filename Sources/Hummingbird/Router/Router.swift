@@ -59,19 +59,7 @@ extension HBRouter {
         _ path: String,
         method: HTTPMethod,
         body: HBBodyCollation = .collate,
-        use closure: @escaping (HBRequest) throws -> Output
-    ) -> Self {
-        let responder = constructResponder(body: body, use: closure)
-        add(path, method: method, responder: responder)
-        return self
-    }
-
-    /// Add path for closure returning type conforming to ResponseFutureEncodable
-    @discardableResult public func on<Output: HBResponseGenerator>(
-        _ path: String,
-        method: HTTPMethod,
-        body: HBBodyCollation = .collate,
-        use closure: @escaping (HBRequest) -> EventLoopFuture<Output>
+        use closure: @escaping (HBRequest) async throws -> Output
     ) -> Self {
         let responder = constructResponder(body: body, use: closure)
         add(path, method: method, responder: responder)

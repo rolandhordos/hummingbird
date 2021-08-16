@@ -22,11 +22,11 @@ class HBEndpointResponder: HBResponder {
         self.methods = [:]
     }
 
-    public func respond(to request: HBRequest) -> EventLoopFuture<HBResponse> {
+    public func respond(to request: HBRequest) async throws -> HBResponse {
         guard let responder = methods[request.method.rawValue] else {
-            return request.failure(HBHTTPError(.notFound))
+            throw HBHTTPError(.notFound)
         }
-        return responder.respond(to: request)
+        return try await responder.respond(to: request)
     }
 
     func addResponder(for method: HTTPMethod, responder: HBResponder) {

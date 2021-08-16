@@ -39,26 +39,6 @@ final class HandlerTests: XCTestCase {
         }
     }
 
-    func testDecodeFutureResponse() throws {
-        struct DecodeTest: HBRequestDecodable {
-            let name: String
-            func handle(request: HBRequest) -> EventLoopFuture<String> {
-                return request.success("Hello \(self.name)")
-            }
-        }
-        let app = HBApplication(testing: .embedded)
-        app.decoder = JSONDecoder()
-        app.router.put("/hello", use: DecodeTest.self)
-
-        try app.XCTStart()
-        defer { app.XCTStop() }
-
-        app.XCTExecute(uri: "/hello", method: .PUT, body: ByteBufferAllocator().buffer(string: #"{"name": "Adam"}"#)) { response in
-            let body = try XCTUnwrap(response.body)
-            XCTAssertEqual(String(buffer: body), "Hello Adam")
-        }
-    }
-
     func testDecodeFail() throws {
         struct DecodeTest: HBRequestDecodable {
             let name: String
@@ -102,3 +82,4 @@ final class HandlerTests: XCTestCase {
         }
     }
 }
+

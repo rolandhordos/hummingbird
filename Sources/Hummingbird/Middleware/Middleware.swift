@@ -41,14 +41,14 @@ import NIO
 /// }
 /// ```
 public protocol HBMiddleware {
-    func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse>
+    func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse
 }
 
 struct MiddlewareResponder: HBResponder {
     let middleware: HBMiddleware
     let next: HBResponder
 
-    func respond(to request: HBRequest) -> EventLoopFuture<HBResponse> {
-        return self.middleware.apply(to: request, next: self.next)
+    func respond(to request: HBRequest) async throws -> HBResponse {
+        return try await self.middleware.apply(to: request, next: self.next)
     }
 }

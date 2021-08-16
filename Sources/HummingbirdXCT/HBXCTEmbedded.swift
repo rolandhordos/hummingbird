@@ -18,7 +18,7 @@ import NIOHTTP1
 import XCTest
 
 /// Test application by running on an EmbeddedChannel
-struct HBXCTEmbedded: HBXCT {
+/*struct HBXCTEmbedded: HBXCT {
     init() {
         self.embeddedChannel = EmbeddedChannel()
         self.embeddedEventLoop = self.embeddedChannel.embeddedEventLoop
@@ -111,3 +111,4 @@ class BreakupHTTPBodyChannelHandler: ChannelInboundHandler, RemovableChannelHand
         }
     }
 }
+*/

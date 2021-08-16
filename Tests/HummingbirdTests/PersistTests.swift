@@ -15,7 +15,7 @@
 @testable import Hummingbird
 import XCTest
 
-final class PersistTests: XCTestCase {
+/*final class PersistTests: XCTestCase {
     static let redisHostname = HBEnvironment.shared.get("REDIS_HOSTNAME") ?? "localhost"
 
     func createApplication() throws -> HBApplication {
@@ -197,4 +197,4 @@ final class PersistTests: XCTestCase {
             XCTAssertEqual(String(buffer: body), "ThisIsTest1")
         }
     }
-}
+}*/

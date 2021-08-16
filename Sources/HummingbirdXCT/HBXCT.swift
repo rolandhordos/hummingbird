@@ -44,7 +44,7 @@ public protocol HBXCT {
         method: HTTPMethod,
         headers: HTTPHeaders,
         body: ByteBuffer?
-    ) -> EventLoopFuture<HBXCTResponse>
+    ) async throws -> HBXCTResponse
     /// EventLoopGroup used by XCT framework
     var eventLoopGroup: EventLoopGroup { get }
 }

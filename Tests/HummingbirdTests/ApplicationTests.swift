@@ -26,9 +26,9 @@ final class ApplicationTests: XCTestCase {
 
     func testGetRoute() throws {
         let app = HBApplication(testing: .embedded)
-        app.router.get("/hello") { request -> EventLoopFuture<ByteBuffer> in
+        app.router.get("/hello") { request -> ByteBuffer in
             let buffer = request.allocator.buffer(string: "GET: Hello")
-            return request.eventLoop.makeSucceededFuture(buffer)
+            return buffer
         }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -142,9 +142,9 @@ final class ApplicationTests: XCTestCase {
 
     func testQueryRoute() throws {
         let app = HBApplication(testing: .embedded)
-        app.router.post("/query") { request -> EventLoopFuture<ByteBuffer> in
+        app.router.post("/query") { request -> ByteBuffer in
             let buffer = request.allocator.buffer(string: request.uri.queryParameters["test"].map { String($0) } ?? "")
-            return request.eventLoop.makeSucceededFuture(buffer)
+            return buffer
         }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -173,8 +173,8 @@ final class ApplicationTests: XCTestCase {
 
     func testEventLoopFutureArray() throws {
         let app = HBApplication(testing: .embedded)
-        app.router.patch("array") { request -> EventLoopFuture<[String]> in
-            return request.success(["yes", "no"])
+        app.router.patch("array") { request -> [String] in
+            return ["yes", "no"]
         }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -207,21 +207,12 @@ final class ApplicationTests: XCTestCase {
         let app = HBApplication(testing: .embedded)
         app.router.post("streaming", body: .stream) { request -> HBResponse in
             guard let stream = request.body.stream else { throw HBHTTPError(.badRequest) }
-            struct RequestStreamer: HBResponseBodyStreamer {
-                let stream: HBStreamerProtocol
-
-                func read(on eventLoop: EventLoop) -> EventLoopFuture<HBResponseBody.StreamResult> {
-                    return stream.consume(on: eventLoop).map { chunk in
-                        switch chunk {
-                        case .byteBuffer(let buffer):
-                            return .byteBuffer(buffer)
-                        case .end:
-                            return .end
-                        }
-                    }
-                }
+            let responseStream = HBByteBufferCallbackStreamer {
+                var iterator = stream.makeAsyncIterator()
+                guard let buffer = try await iterator.next() else { return .end }
+                return .byteBuffer(buffer)
             }
-            return HBResponse(status: .ok, headers: [:], body: .stream(RequestStreamer(stream: stream)))
+            return HBResponse(status: .ok, headers: [:], body: .streamCallback(responseStream))
         }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -241,21 +232,12 @@ final class ApplicationTests: XCTestCase {
         let app = HBApplication(testing: .embedded)
         app.router.post("streaming", body: .stream) { request -> HBResponse in
             guard let stream = request.body.stream else { throw HBHTTPError(.badRequest) }
-            struct RequestStreamer: HBResponseBodyStreamer {
-                let stream: HBStreamerProtocol
-
-                func read(on eventLoop: EventLoop) -> EventLoopFuture<HBResponseBody.StreamResult> {
-                    return stream.consume(on: eventLoop).map { chunk in
-                        switch chunk {
-                        case .byteBuffer(let buffer):
-                            return .byteBuffer(buffer)
-                        case .end:
-                            return .end
-                        }
-                    }
-                }
+            let responseStream = HBByteBufferCallbackStreamer {
+                var iterator = stream.makeAsyncIterator()
+                guard let buffer = try await iterator.next() else { return .end }
+                return .byteBuffer(buffer)
             }
-            return HBResponse(status: .ok, headers: [:], body: .stream(RequestStreamer(stream: stream)))
+            return HBResponse(status: .ok, headers: [:], body: .streamCallback(responseStream))
         }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -294,8 +276,8 @@ final class ApplicationTests: XCTestCase {
         let app = HBApplication(testing: .embedded)
         app.router
             .group("/echo-body")
-            .post { request -> EventLoopFuture<ByteBuffer?> in
-                return request.success(request.body.buffer)
+            .post { request -> ByteBuffer? in
+                return request.body.buffer
             }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -375,3 +357,4 @@ final class ApplicationTests: XCTestCase {
         }
     }
 }
+

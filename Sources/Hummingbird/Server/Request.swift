@@ -96,7 +96,7 @@ public final class HBRequest: HBExtensible {
     }
 
     /// Return failed `EventLoopFuture`
-    public func failure<T>(_ error: Error) -> EventLoopFuture<T> {
+    /*public func failure<T>(_ error: Error) -> EventLoopFuture<T> {
         return self.eventLoop.makeFailedFuture(error)
     }
 
@@ -113,7 +113,7 @@ public final class HBRequest: HBExtensible {
     /// Return succeeded `EventLoopFuture`
     public func success<T>(_ value: T) -> EventLoopFuture<T> {
         return self.eventLoop.makeSucceededFuture(value)
-    }
+    }*/
 
     private static let globalRequestID = NIOAtomic<Int>.makeAtomic(value: 0)
 }

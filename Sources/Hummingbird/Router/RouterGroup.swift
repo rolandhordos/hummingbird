@@ -58,20 +58,7 @@ public struct HBRouterGroup: HBRouterMethods {
         _ path: String = "",
         method: HTTPMethod,
         body: HBBodyCollation = .collate,
-        use closure: @escaping (HBRequest) throws -> Output
-    ) -> Self {
-        let responder = constructResponder(body: body, use: closure)
-        let path = self.combinePaths(self.path, path)
-        self.router.add(path, method: method, responder: self.middlewares.constructResponder(finalResponder: responder))
-        return self
-    }
-
-    /// Add path for closure returning type conforming to ResponseFutureEncodable
-    @discardableResult public func on<Output: HBResponseGenerator>(
-        _ path: String = "",
-        method: HTTPMethod,
-        body: HBBodyCollation = .collate,
-        use closure: @escaping (HBRequest) -> EventLoopFuture<Output>
+        use closure: @escaping (HBRequest) async throws -> Output
     ) -> Self {
         let responder = constructResponder(body: body, use: closure)
         let path = self.combinePaths(self.path, path)

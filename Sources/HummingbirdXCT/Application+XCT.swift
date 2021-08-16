@@ -62,7 +62,7 @@ extension HBApplication {
         let configuration = configuration.with(address: .hostname("localhost", port: 0))
         switch testing {
         case .embedded:
-            xct = HBXCTEmbedded()
+            xct = HBXCTLive(configuration: configuration)
         case .live:
             xct = HBXCTLive(configuration: configuration)
         }
@@ -96,8 +96,15 @@ extension HBApplication {
         body: ByteBuffer? = nil,
         testCallback: @escaping (HBXCTResponse) throws -> Void
     ) {
-        XCTAssertNoThrow(try self.xct.execute(uri: uri, method: method, headers: headers, body: body).flatMapThrowing { response in
-            try testCallback(response)
-        }.wait())
+        let promise = self.eventLoopGroup.next().makePromise(of: Void.self)
+        promise.completeWithAsync {
+            do {
+                let response = try await self.xct.execute(uri: uri, method: method, headers: headers, body: body)
+                try testCallback(response)
+            } catch {
+                XCTFail("\(error)")
+            }
+        }
+        try? promise.futureResult.wait()
     }
 }

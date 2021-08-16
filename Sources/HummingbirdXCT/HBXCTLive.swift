@@ -31,21 +31,29 @@ class HBXCTLive: HBXCT {
 
     /// Start tests
     func start(application: HBApplication) throws {
-        do {
-            try application.start()
-            let client = HBXCTClient(host: "localhost", port: application.server.port!, eventLoopGroupProvider: .createNew)
-            client.connect()
-            self.client = client
-        } catch {
-            // if start fails then shutdown client
-            try self.client?.syncShutdown()
-            throw error
+        let promise = application.eventLoopGroup.next().makePromise(of: Void.self)
+        let client = HBXCTClient(host: "localhost", port: application.server.port!, eventLoopGroupProvider: .createNew)
+        promise.completeWithAsync {
+            do {
+                try application.start()
+                try await self.client.connect()
+            } catch {
+                // if start fails then shutdown client
+                try await self.client.shutdown()
+                throw error
+            }
         }
+        self.client = client
+        try promise.futureResult.wait()
     }
 
     /// Stop tests
     func stop(application: HBApplication) {
-        XCTAssertNoThrow(_ = try self.client?.syncShutdown())
+        let promise = application.eventLoopGroup.next().makePromise(of: Void.self)
+        promise.completeWithAsync {
+            try await self.client.shutdown()
+        }
+        try? promise.futureResult.wait()
         application.stop()
         application.wait()
         try? self.eventLoopGroup.syncShutdownGracefully()
@@ -57,18 +65,14 @@ class HBXCTLive: HBXCT {
         method: HTTPMethod,
         headers: HTTPHeaders = [:],
         body: ByteBuffer? = nil
-    ) -> EventLoopFuture<HBXCTResponse> {
+    ) async throws -> HBXCTResponse {
         var headers = headers
         headers.replaceOrAdd(name: "connection", value: "keep-alive")
         headers.replaceOrAdd(name: "host", value: "localhost")
         let request = HBXCTClient.Request(uri, method: method, headers: headers, body: body)
-        guard let client = self.client else {
-            return eventLoopGroup.next().makeFailedFuture(HBXCTError.notStarted)
-        }
-        return client.execute(request)
-            .map { response in
-                return .init(status: response.status, headers: response.headers, body: response.body)
-            }
+        guard let client = self.client else { throw HBXCTError.notStarted }
+        let response = try await self.client.execute(request)
+        return .init(status: response.status, headers: response.headers, body: response.body)
     }
 
     let eventLoopGroup: EventLoopGroup

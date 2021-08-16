@@ -40,17 +40,17 @@ struct TrieRouter: HBRouter {
     /// Respond to request by calling correct handler
     /// - Parameter request: HTTP request
     /// - Returns: EventLoopFuture that will be fulfilled with the Response
-    public func respond(to request: HBRequest) -> EventLoopFuture<HBResponse> {
+    public func respond(to request: HBRequest) async throws -> HBResponse {
         let path = "\(request.uri.path)"
         guard let result = trie.getValueAndParameters(path) else {
-            return request.eventLoop.makeFailedFuture(HBHTTPError(.notFound))
+            throw HBHTTPError(.notFound)
         }
         if result.parameters.count > 0 {
             request.parameters = result.parameters
         }
         // store endpoint path in request (mainly for metrics)
         request.endpointPath = result.value.path
-        return result.value.respond(to: request)
+        return try await result.value.respond(to: request)
     }
 }
 

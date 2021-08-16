@@ -43,26 +43,19 @@ extension HBApplication {
         ///   - request: request
         ///   - context: context from ChannelHandler
         /// - Returns: response
-        public func respond(to request: HBHTTPRequest, context: ChannelHandlerContext, onComplete: @escaping (Result<HBHTTPResponse, Error>) -> Void) {
+        public func respond(to request: HBHTTPRequest, channel: Channel) async throws -> HBHTTPResponse {
             let request = HBRequest(
                 head: request.head,
                 body: request.body,
                 application: self.application,
-                context: ChannelRequestContext(channel: context.channel)
+                context: ChannelRequestContext(channel: channel)
             )
 
             // respond to request
-            self.responder.respond(to: request).whenComplete { result in
-                switch result {
-                case .success(let response):
-                    response.headers.add(name: "Date", value: HBDateCache.getDateCache(on: context.eventLoop).currentDate)
-                    let responseHead = HTTPResponseHead(version: request.version, status: response.status, headers: response.headers)
-                    onComplete(.success(HBHTTPResponse(head: responseHead, body: response.body)))
-
-                case .failure(let error):
-                    return onComplete(.failure(error))
-                }
-            }
+            let response = try await self.responder.respond(to: request)
+            //response.headers.add(name: "Date", value: HBDateCache.getDateCache(on: channel.eventLoop).currentDate)
+            let responseHead = HTTPResponseHead(version: request.version, status: response.status, headers: response.headers)
+            return HBHTTPResponse(head: responseHead, body: response.body)
         }
     }
 

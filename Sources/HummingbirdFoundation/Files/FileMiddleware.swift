@@ -59,19 +59,17 @@ public struct HBFileMiddleware: HBMiddleware {
         application.logger.info("FileMiddleware serving from \(workingFolder)/\(rootFolder)")
     }
 
-    public func apply(to request: HBRequest, next: HBResponder) -> EventLoopFuture<HBResponse> {
+    public func apply(to request: HBRequest, next: HBResponder) async throws -> HBResponse {
         // if next responder returns a 404 then check if file exists
-        return next.respond(to: request).flatMapError { error in
-            guard let httpError = error as? HBHTTPError, httpError.status == .notFound else {
-                return request.failure(error)
-            }
-
+        do {
+            return try await next.respond(to: request)
+        } catch let httpError as HBHTTPError where httpError.status == .notFound {
             guard let path = request.uri.path.removingPercentEncoding else {
-                return request.failure(.badRequest)
+                throw HBHTTPError(.badRequest)
             }
 
             guard !path.contains("..") else {
-                return request.failure(.badRequest)
+                throw HBHTTPError(.badRequest)
             }
 
             let fullPath = rootFolder + path
@@ -82,7 +80,7 @@ public struct HBFileMiddleware: HBMiddleware {
                 modificationDate = attributes[.modificationDate] as? Date
                 contentSize = attributes[.size] as? Int
             } catch {
-                return request.failure(.notFound)
+                throw HBHTTPError(.badRequest)
             }
             let eTag = createETag([
                 String(describing: modificationDate?.timeIntervalSince1970 ?? 0),
@@ -109,7 +107,7 @@ public struct HBFileMiddleware: HBMiddleware {
             if ifNoneMatch.count > 0 {
                 for match in ifNoneMatch {
                     if eTag == match {
-                        return request.success(HBResponse(status: .notModified, headers: headers))
+                        return HBResponse(status: .notModified, headers: headers)
                     }
                 }
             }
@@ -122,7 +120,7 @@ public struct HBFileMiddleware: HBMiddleware {
                     let modificationDateTimeInterval = modificationDate.timeIntervalSince1970.rounded(.down)
                     let ifModifiedSinceDateTimeInterval = ifModifiedSinceDate.timeIntervalSince1970
                     if modificationDateTimeInterval <= ifModifiedSinceDateTimeInterval {
-                        return request.success(HBResponse(status: .notModified, headers: headers))
+                        return HBResponse(status: .notModified, headers: headers)
                     }
                 }
             }
@@ -145,32 +143,28 @@ public struct HBFileMiddleware: HBMiddleware {
 
                 if let rangeHeader = request.headers["Range"].first {
                     guard let range = getRangeFromHeaderValue(rangeHeader) else {
-                        return request.failure(.rangeNotSatisfiable)
+                        throw HBHTTPError(.rangeNotSatisfiable)
                     }
-                    return fileIO.loadFile(path: fullPath, range: range, context: request.context, logger: request.logger)
-                        .map { body, fileSize in
-                            headers.replaceOrAdd(name: "accept-ranges", value: "bytes")
+                    let (body, fileSize) = try await fileIO.loadFile(path: fullPath, range: range, context: request.context, logger: request.logger)
+                    headers.replaceOrAdd(name: "accept-ranges", value: "bytes")
 
-                            let lowerBound = max(range.lowerBound, 0)
-                            let upperBound = min(range.upperBound, fileSize - 1)
-                            headers.replaceOrAdd(name: "content-range", value: "bytes \(lowerBound)-\(upperBound)/\(fileSize)")
-                            // override content-length set above
-                            headers.replaceOrAdd(name: "content-length", value: String(describing: upperBound - lowerBound + 1))
+                    let lowerBound = max(range.lowerBound, 0)
+                    let upperBound = min(range.upperBound, fileSize - 1)
+                    headers.replaceOrAdd(name: "content-range", value: "bytes \(lowerBound)-\(upperBound)/\(fileSize)")
+                    // override content-length set above
+                    headers.replaceOrAdd(name: "content-length", value: String(describing: upperBound - lowerBound + 1))
 
-                            return HBResponse(status: .partialContent, headers: headers, body: body)
-                        }
+                    return HBResponse(status: .partialContent, headers: headers, body: body)
                 }
-                return fileIO.loadFile(path: fullPath, context: request.context, logger: request.logger)
-                    .map { body in
-                        headers.replaceOrAdd(name: "accept-ranges", value: "bytes")
-                        return HBResponse(status: .ok, headers: headers, body: body)
-                    }
+                let body = try await fileIO.loadFile(path: fullPath, context: request.context, logger: request.logger)
+                headers.replaceOrAdd(name: "accept-ranges", value: "bytes")
+                return HBResponse(status: .ok, headers: headers, body: body)
 
             case .HEAD:
-                return request.success(HBResponse(status: .ok, headers: headers, body: .empty))
+                return HBResponse(status: .ok, headers: headers, body: .empty)
 
             default:
-                return request.failure(error)
+                throw httpError
             }
         }
     }

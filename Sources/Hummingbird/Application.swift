@@ -110,10 +110,23 @@ public final class HBApplication: HBExtensible {
         )
 
         // register server startup and shutdown with lifecycle
+        let eventLoop = eventLoopGroup.next()
         self.lifecycle.register(
             label: "HTTP Server",
-            start: .eventLoopFuture { self.server.start(responder: HTTPResponder(application: self)) },
-            shutdown: .eventLoopFuture(self.server.stop)
+            start: .eventLoopFuture {
+                let promise = eventLoop.makePromise(of: Void.self)
+                promise.completeWithAsync {
+                    try await self.server.start(responder: HTTPResponder(application: self))
+                }
+                return promise.futureResult
+            },
+            shutdown: .eventLoopFuture {
+                let promise = eventLoop.makePromise(of: Void.self)
+                promise.completeWithAsync {
+                    try await self.server.stop()
+                }
+                return promise.futureResult
+            }
         )
     }
 
