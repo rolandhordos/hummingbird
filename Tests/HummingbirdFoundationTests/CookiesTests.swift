@@ -15,7 +15,7 @@
 @testable import HummingbirdFoundation
 import XCTest
 
-/*class CookieTests: XCTestCase {
+class CookieTests: XCTestCase {
     func testNameValue() {
         let cookie = HBCookie(from: "name=value")
         XCTAssertEqual(cookie?.name, "name")
@@ -106,4 +106,4 @@ import XCTest
         }
     }
 }
-*/
+

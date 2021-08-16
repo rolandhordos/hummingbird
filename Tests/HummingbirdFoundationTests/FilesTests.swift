@@ -18,7 +18,7 @@ import HummingbirdFoundation
 import HummingbirdXCT
 import XCTest
 
-/*class HummingbirdFilesTests: XCTestCase {
+class HummingbirdFilesTests: XCTestCase {
     func randomBuffer(size: Int) -> ByteBuffer {
         var data = [UInt8](repeating: 0, count: size)
         data = data.map { _ in UInt8.random(in: 0...255) }
@@ -243,10 +243,10 @@ import XCTest
     func testWrite() throws {
         let filename = "testWrite.txt"
         let app = HBApplication(testing: .live)
-        app.router.put("store") { request -> EventLoopFuture<HTTPResponseStatus> in
+        app.router.put("store") { request -> HTTPResponseStatus in
             let fileIO = HBFileIO(application: request.application)
-            return fileIO.writeFile(contents: request.body, path: filename, context: request.context, logger: request.logger)
-                .map { .ok }
+            try await fileIO.writeFile(contents: request.body, path: filename, context: request.context, logger: request.logger)
+            return .ok
         }
 
         try app.XCTStart()
@@ -266,10 +266,10 @@ import XCTest
     func testWriteLargeFile() throws {
         let filename = "testWriteLargeFile.txt"
         let app = HBApplication(testing: .live)
-        app.router.put("store") { request -> EventLoopFuture<HTTPResponseStatus> in
+        app.router.put("store") { request -> HTTPResponseStatus in
             let fileIO = HBFileIO(application: request.application)
-            return fileIO.writeFile(contents: request.body, path: filename, context: request.context, logger: request.logger)
-                .map { .ok }
+            try await fileIO.writeFile(contents: request.body, path: filename, context: request.context, logger: request.logger)
+            return .ok
         }
 
         try app.XCTStart()
@@ -286,4 +286,4 @@ import XCTest
         XCTAssertEqual(Data(buffer: buffer), data)
     }
 }
-*/
+
