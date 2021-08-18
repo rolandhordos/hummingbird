@@ -33,7 +33,7 @@ class HBXCTLive: HBXCT {
     func start(application: HBApplication) throws {
         let promise = application.eventLoopGroup.next().makePromise(of: Void.self)
         let client = HBXCTClient(host: "localhost", port: application.server.port!, eventLoopGroupProvider: .createNew)
-        promise.completeWithAsync {
+        promise.completeWithTask {
             do {
                 try application.start()
                 try await self.client.connect()
@@ -50,7 +50,7 @@ class HBXCTLive: HBXCT {
     /// Stop tests
     func stop(application: HBApplication) {
         let promise = application.eventLoopGroup.next().makePromise(of: Void.self)
-        promise.completeWithAsync {
+        promise.completeWithTask {
             try await self.client.shutdown()
         }
         try? promise.futureResult.wait()

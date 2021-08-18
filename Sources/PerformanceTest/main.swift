@@ -33,6 +33,8 @@ app.encoder = JSONEncoder()
 app.decoder = JSONDecoder()
 
 // configure app
+app.middleware.add(HBLogRequestsMiddleware(.debug))
+app.middleware.add(HBFileMiddleware(application: app))
 
 // number of raw requests
 // ./wrk -c 128 -d 15s -t 8 http://localhost:8080

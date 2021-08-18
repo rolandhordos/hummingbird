@@ -115,14 +115,14 @@ public final class HBApplication: HBExtensible {
             label: "HTTP Server",
             start: .eventLoopFuture {
                 let promise = eventLoop.makePromise(of: Void.self)
-                promise.completeWithAsync {
+                promise.completeWithTask {
                     try await self.server.start(responder: HTTPResponder(application: self))
                 }
                 return promise.futureResult
             },
             shutdown: .eventLoopFuture {
                 let promise = eventLoop.makePromise(of: Void.self)
-                promise.completeWithAsync {
+                promise.completeWithTask {
                     try await self.server.stop()
                 }
                 return promise.futureResult

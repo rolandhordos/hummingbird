@@ -97,7 +97,7 @@ extension HBApplication {
         testCallback: @escaping (HBXCTResponse) throws -> Void
     ) {
         let promise = self.eventLoopGroup.next().makePromise(of: Void.self)
-        promise.completeWithAsync {
+        promise.completeWithTask {
             do {
                 let response = try await self.xct.execute(uri: uri, method: method, headers: headers, body: body)
                 try testCallback(response)
