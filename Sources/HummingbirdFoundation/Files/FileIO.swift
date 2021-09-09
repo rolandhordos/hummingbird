@@ -147,14 +147,13 @@ public struct HBFileIO {
         )*/
         var fileOffset = region.readerIndex
         let endOffset = region.endIndex
-        return .streamCallback(HBByteBufferCallbackStreamer {
+        return .stream(HBResponseBodyStreamer {
             let bytesLeft = endOffset - fileOffset
             let bytesToRead = min(self.chunkSize, bytesLeft)
             if bytesToRead > 0 {
                 let fileOffsetToRead = fileOffset
                 fileOffset += bytesToRead
                 return try await self.fileIO.read(fileHandle: handle, fromOffset: Int64(fileOffsetToRead), byteCount: bytesToRead, allocator: context.allocator, eventLoop: context.eventLoop)
-                    .map { .byteBuffer($0) }
                     .flatMapErrorThrowing { error in
                         // close handle on error being returned
                         try? handle.close()
@@ -163,7 +162,7 @@ public struct HBFileIO {
             } else {
                 // close handle now streamer has finished
                 try? handle.close()
-                return .end
+                return nil
             }
         })
     }
@@ -174,7 +173,7 @@ public struct HBFileIO {
     }
 
     /// write output of streamer to file
-    func writeFile(stream: HBByteBufferQueueStreamer, handle: NIOFileHandle, on eventLoop: EventLoop) async throws {
+    func writeFile(stream: HBRequestBodyStreamer, handle: NIOFileHandle, on eventLoop: EventLoop) async throws {
         for try await buffer in stream {
             try await self.fileIO.write(fileHandle: handle, buffer: buffer, eventLoop: eventLoop).get()
         }

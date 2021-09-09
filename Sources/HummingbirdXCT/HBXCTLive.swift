@@ -31,27 +31,27 @@ class HBXCTLive: HBXCT {
 
     /// Start tests
     func start(application: HBApplication) throws {
-        let promise = application.eventLoopGroup.next().makePromise(of: Void.self)
-        let client = HBXCTClient(host: "localhost", port: application.server.port!, eventLoopGroupProvider: .createNew)
+        let promise = application.eventLoopGroup.next().makePromise(of: HBXCTClient.self)
         promise.completeWithTask {
+            try application.start()
+            let client = HBXCTClient(host: "localhost", port: application.server.port!, eventLoopGroupProvider: .createNew)
             do {
-                try application.start()
-                try await self.client.connect()
+                try await client.connect()
+                return client
             } catch {
                 // if start fails then shutdown client
-                try await self.client.shutdown()
+                try await client.shutdown()
                 throw error
             }
         }
-        self.client = client
-        try promise.futureResult.wait()
+        self.client = try promise.futureResult.wait()
     }
 
     /// Stop tests
     func stop(application: HBApplication) {
         let promise = application.eventLoopGroup.next().makePromise(of: Void.self)
         promise.completeWithTask {
-            try await self.client.shutdown()
+            try await self.client?.shutdown()
         }
         try? promise.futureResult.wait()
         application.stop()
@@ -71,7 +71,7 @@ class HBXCTLive: HBXCT {
         headers.replaceOrAdd(name: "host", value: "localhost")
         let request = HBXCTClient.Request(uri, method: method, headers: headers, body: body)
         guard let client = self.client else { throw HBXCTError.notStarted }
-        let response = try await self.client.execute(request)
+        let response = try await client.execute(request)
         return .init(status: response.status, headers: response.headers, body: response.body)
     }
 

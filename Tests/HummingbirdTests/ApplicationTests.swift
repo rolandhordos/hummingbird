@@ -193,12 +193,11 @@ final class ApplicationTests: XCTestCase {
         let app = HBApplication(testing: .embedded)
         app.router.post("streaming", body: .stream) { request -> HBResponse in
             guard let stream = request.body.stream else { throw HBHTTPError(.badRequest) }
-            let responseStream = HBByteBufferCallbackStreamer {
-                var iterator = stream.makeAsyncIterator()
-                guard let buffer = try await iterator.next() else { return .end }
-                return .byteBuffer(buffer)
+            var iterator = stream.makeAsyncIterator()
+            let responseStream = HBResponseBodyStreamer {
+                try await iterator.next()
             }
-            return HBResponse(status: .ok, headers: [:], body: .streamCallback(responseStream))
+            return HBResponse(status: .ok, headers: [:], body: .stream(responseStream))
         }
         try app.XCTStart()
         defer { app.XCTStop() }
@@ -218,12 +217,11 @@ final class ApplicationTests: XCTestCase {
         let app = HBApplication(testing: .embedded)
         app.router.post("streaming", body: .stream) { request -> HBResponse in
             guard let stream = request.body.stream else { throw HBHTTPError(.badRequest) }
-            let responseStream = HBByteBufferCallbackStreamer {
-                var iterator = stream.makeAsyncIterator()
-                guard let buffer = try await iterator.next() else { return .end }
-                return .byteBuffer(buffer)
+            var iterator = stream.makeAsyncIterator()
+            let responseStream = HBResponseBodyStreamer {
+                try await iterator.next()
             }
-            return HBResponse(status: .ok, headers: [:], body: .streamCallback(responseStream))
+            return HBResponse(status: .ok, headers: [:], body: .stream(responseStream))
         }
         try app.XCTStart()
         defer { app.XCTStop() }
