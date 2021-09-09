@@ -53,7 +53,7 @@ extension HBApplication {
 
             // respond to request
             let response = try await self.responder.respond(to: request)
-            //response.headers.add(name: "Date", value: HBDateCache.getDateCache(on: channel.eventLoop).currentDate)
+            response.headers.add(name: "Date", value: self.application.dateCache.currentDate)
             let responseHead = HTTPResponseHead(version: request.version, status: response.status, headers: response.headers)
             return HBHTTPResponse(head: responseHead, body: response.body)
         }

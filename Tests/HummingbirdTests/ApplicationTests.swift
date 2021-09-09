@@ -78,6 +78,7 @@ final class ApplicationTests: XCTestCase {
 
         app.XCTExecute(uri: "/hello", method: .GET) { response in
             XCTAssertEqual(response.headers["server"].first, "Hummingbird")
+            XCTAssertNotNil(response.headers["date"].first)
         }
     }
 
