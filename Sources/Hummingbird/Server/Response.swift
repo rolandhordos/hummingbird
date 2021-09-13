@@ -26,7 +26,9 @@ public struct HBResponse: HBExtensible {
     public var body: HBResponseBody
     /// Response extensions
     public var extensions: HBExtensions<HBResponse>
-
+    /// Endpoint that generated this response
+    var endpointPath: String?
+    
     /// Create an `HBResponse`
     ///
     /// - Parameters:

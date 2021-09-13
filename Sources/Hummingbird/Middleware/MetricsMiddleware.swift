@@ -28,11 +28,11 @@ public struct HBMetricsMiddleware: HBMiddleware {
         let responseFuture = next.respond(to: request)
         responseFuture.whenComplete { result in
             switch result {
-            case .success:
+            case .success(let response):
                 // need to create dimensions once request has been responded to ensure
                 // we have the correct endpoint path
                 let dimensions: [(String, String)] = [
-                    ("hb_uri", request.endpointPath ?? request.uri.path),
+                    ("hb_uri", response.endpointPath ?? request.uri.path),
                     ("hb_method", request.method.rawValue),
                 ]
                 Counter(label: "hb_requests", dimensions: dimensions).increment()
@@ -42,14 +42,14 @@ public struct HBMetricsMiddleware: HBMiddleware {
                     preferredDisplayUnit: .seconds
                 ).recordNanoseconds(DispatchTime.now().uptimeNanoseconds - startTime)
 
-            case .failure:
+            case .failure(let error):
                 // need to create dimensions once request has been responded to ensure
                 // we have the correct endpoint path
                 let dimensions: [(String, String)]
                 // Don't record uri in 404 errors, to avoid spamming of metrics
-                if let endpointPath = request.endpointPath {
+                if let handlerError = error as? HBRouteHandlerError {
                     dimensions = [
-                        ("hb_uri", endpointPath),
+                        ("hb_uri", handlerError.endpointPath),
                         ("hb_method", request.method.rawValue),
                     ]
                     Counter(label: "hb_requests", dimensions: dimensions).increment()

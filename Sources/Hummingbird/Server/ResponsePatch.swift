@@ -47,7 +47,7 @@ extension HBRequest {
                 error: "Cannot edit response via HBRequest.response on a route with the .editResponse option set"
             )
         }
-        set { self.extensions.set(\.response, value: newValue) }
+        //set { self.extensions.set(\.response, value: newValue) }
     }
 
     /// return `ResponsePatch` only if it exists. Used internally

@@ -61,7 +61,12 @@ extension HBApplication {
                     onComplete(.success(HBHTTPResponse(head: responseHead, body: response.body)))
 
                 case .failure(let error):
-                    return onComplete(.failure(error))
+                    switch error {
+                    case let error as HBRouteHandlerError:
+                        onComplete(.failure(error.error))
+                    default:
+                        onComplete(.failure(error))
+                    }
                 }
             }
         }

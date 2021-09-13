@@ -19,29 +19,30 @@ import NIOConcurrencyHelpers
 import NIOHTTP1
 
 /// Holds all the values required to process a request
-public final class HBRequest: HBExtensible {
+public final class HBRequest {
     // MARK: Member variables
 
     /// URI path
-    public var uri: HBURL
+    public let uri: HBURL
     /// HTTP version
-    public var version: HTTPVersion
+    public let version: HTTPVersion
     /// Request HTTP method
-    public var method: HTTPMethod
+    public let method: HTTPMethod
     /// Request HTTP headers
-    public var headers: HTTPHeaders
+    public let headers: HTTPHeaders
     /// Body of HTTP request
-    public var body: HBRequestBody
+    public let body: HBRequestBody
     /// Logger to use
-    public var logger: Logger
+    public let logger: Logger
     /// reference to application
-    public var application: HBApplication
+    public let application: HBApplication
     /// Request extensions
-    public var extensions: HBExtensions<HBRequest>
+    public let extensions: HBExtensions<HBRequest>
+    /// context used to access common members from channel
+    public let context: HBRequestContext
     /// endpoint that services this request
-    public var endpointPath: String?
+    //internal var endpointPath: String?
 
-    public var context: HBRequestContext
     /// EventLoop request is running on
     public var eventLoop: EventLoop { self.context.eventLoop }
     /// ByteBuffer allocator used by request
@@ -57,7 +58,6 @@ public final class HBRequest: HBExtensible {
                 error: "Cannot access HBRequest.parameters on a route not extracting parameters from the URI."
             )
         }
-        set { self.extensions.set(\.parameters, value: newValue) }
     }
 
     // MARK: Initialization
@@ -83,11 +83,75 @@ public final class HBRequest: HBExtensible {
         self.logger = application.logger.with(metadataKey: "hb_id", value: .stringConvertible(Self.globalRequestID.add(1)))
         self.application = application
         self.extensions = HBExtensions()
-        self.endpointPath = nil
+        //self.endpointPath = nil
+        self.context = context
+    }
+
+    /// Create new HBRequest
+    /// - Parameters:
+    ///   - uri: uri
+    ///   - version: HTTP version
+    ///   - method: HTTP method
+    ///   - headers: HTTP header
+    ///   - body: Request body
+    ///   - logger: Logger request uses
+    ///   - application: Application
+    ///   - extensions: Request extensions
+    ///   - context: Request context
+    public init(
+        uri: HBURL,
+        version: HTTPVersion,
+        method: HTTPMethod,
+        headers: HTTPHeaders,
+        body: HBRequestBody,
+        logger: Logger,
+        application: HBApplication,
+        extensions: HBExtensions<HBRequest>,
+        context: HBRequestContext
+    ) {
+        self.uri = uri
+        self.version = version
+        self.method = method
+        self.headers = headers
+        self.body = body
+        self.logger = logger
+        self.application = application
+        self.extensions = extensions
+        //self.endpointPath = nil
         self.context = context
     }
 
     // MARK: Methods
+
+    public func with(body: HBRequestBody) -> Self {
+        return .init(
+            uri: self.uri,
+            version: self.version,
+            method: self.method,
+            headers: self.headers,
+            body: body,
+            logger: self.logger,
+            application: self.application,
+            extensions: self.extensions,
+            context: self.context
+        )
+    }
+
+    public func with<Type>(extension: KeyPath<HBRequest, Type>, value: Type) -> Self {
+        var extensions = self.extensions
+        extensions.set(`extension`, value: value)
+        return .init(
+            uri: self.uri,
+            version: self.version,
+            method: self.method,
+            headers: self.headers,
+            body: body,
+            logger: self.logger,
+            application: self.application,
+            extensions: extensions,
+            context: self.context
+        )
+    }
 
     /// Decode request using decoder stored at `HBApplication.decoder`.
     /// - Parameter type: Type you want to decode to

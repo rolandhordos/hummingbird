@@ -165,8 +165,9 @@ extension HBRouterMethods {
     ) -> HBResponder {
         if options.contains(.streamBody) {
             return HBCallbackResponder { request in
+                var request = request
                 if options.contains(.editResponse) {
-                    request.response = .init()
+                    request = request.with(extension: \.response, value: .init())
                 }
                 do {
                     let response = try closure(request).patchedResponse(from: request)
@@ -177,8 +178,9 @@ extension HBRouterMethods {
             }
         } else {
             return HBCallbackResponder { request in
+                var request = request
                 if options.contains(.editResponse) {
-                    request.response = .init()
+                    request = request.with(extension: \.response, value: .init())
                 }
                 if case .byteBuffer = request.body {
                     do {
@@ -189,7 +191,7 @@ extension HBRouterMethods {
                     }
                 } else {
                     return request.body.consumeBody(on: request.eventLoop).flatMapThrowing { buffer in
-                        request.body = .byteBuffer(buffer)
+                        let request = request.with(body: .byteBuffer(buffer))
                         return try closure(request).patchedResponse(from: request)
                     }
                 }
@@ -203,23 +205,25 @@ extension HBRouterMethods {
     ) -> HBResponder {
         if options.contains(.streamBody) {
             return HBCallbackResponder { request in
+                var request = request
                 if options.contains(.editResponse) {
-                    request.response = .init()
+                    request = request.with(extension: \.response, value: .init())
                 }
                 return closure(request).flatMapThrowing { try $0.patchedResponse(from: request) }
                     .hop(to: request.eventLoop)
             }
         } else {
             return HBCallbackResponder { request in
+                var request = request
                 if options.contains(.editResponse) {
-                    request.response = .init()
+                    request = request.with(extension: \.response, value: .init())
                 }
                 if case .byteBuffer = request.body {
                     return closure(request).flatMapThrowing { try $0.patchedResponse(from: request) }
                         .hop(to: request.eventLoop)
                 } else {
                     return request.body.consumeBody(on: request.eventLoop).flatMap { buffer in
-                        request.body = .byteBuffer(buffer)
+                        let request = request.with(body: .byteBuffer(buffer))
                         return closure(request).flatMapThrowing { try $0.patchedResponse(from: request) }
                             .hop(to: request.eventLoop)
                     }
